@@ -175,14 +175,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.transport == "sse" and MCP_MOUNT_PATH and MCP_MOUNT_PATH != "/":
-        # Mount the SSE app at MCP_MOUNT_PATH so the endpoint event includes the
-        # full path prefix (e.g. /fao-56/messages/), enabling reverse-proxy setups.
+        # Run the SSE app directly with mount_path set so the endpoint event
+        # returns the full public prefix (e.g. /fao-56/messages/). The reverse
+        # proxy (Apache) strips the prefix before forwarding to the container,
+        # so the container routes remain at /sse and /messages/.
         import uvicorn
-        from starlette.applications import Starlette
-        from starlette.routing import Mount
 
-        sse_app = mcp.sse_app(mount_path=MCP_MOUNT_PATH)
-        app = Starlette(routes=[Mount(MCP_MOUNT_PATH, app=sse_app)])
+        app = mcp.sse_app(mount_path=MCP_MOUNT_PATH)
         uvicorn.run(app, host=MCP_HOST, port=MCP_PORT)
     else:
         mcp.run(transport=args.transport)
