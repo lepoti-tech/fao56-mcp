@@ -1,0 +1,5 @@
+mcp[cli]>=1.6.0
+pdfplumber>=0.11.0
+sentence-transformers>=3.0.0
+sqlite-vec>=0.1.0
+numpy>=1.26.0
