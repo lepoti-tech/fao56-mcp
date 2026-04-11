@@ -13,7 +13,6 @@ COPY fao56.db server.py ./
 ENV FAO56_DB=/app/fao56.db
 ENV MCP_HOST=0.0.0.0
 ENV MCP_PORT=8003
-ENV MCP_MOUNT_PATH=/fao-56
 
 EXPOSE 8003
 

@@ -8,5 +8,4 @@ services:
       FAO56_DB: /app/fao56.db
       MCP_HOST: "0.0.0.0"
       MCP_PORT: "8003"
-      MCP_MOUNT_PATH: /fao-56
     restart: unless-stopped
