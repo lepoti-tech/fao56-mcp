@@ -11,9 +11,9 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY fao56.db server.py ./
 
 ENV FAO56_DB=/app/fao56.db
-ENV FASTMCP_HOST=0.0.0.0
-ENV FASTMCP_PORT=8003
-ENV FASTMCP_MOUNT_PATH=/fao-56
+ENV MCP_HOST=0.0.0.0
+ENV MCP_PORT=8003
+ENV MCP_MOUNT_PATH=/fao-56
 
 EXPOSE 8003
 
