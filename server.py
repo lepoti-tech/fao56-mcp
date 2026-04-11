@@ -31,6 +31,7 @@ DB_PATH = os.getenv("FAO56_DB", str(Path(__file__).parent / "fao56.db"))
 TOP_K = 5
 MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
 MCP_PORT = int(os.getenv("MCP_PORT", "8000"))
+MCP_MOUNT_PATH = os.getenv("MCP_MOUNT_PATH", "/")
 
 # ── Load resources once at startup ───────────────────────────────────────────
 
