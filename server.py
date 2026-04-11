@@ -172,4 +172,16 @@ if __name__ == "__main__":
         help="Transport protocol (default: stdio)",
     )
     args = parser.parse_args()
-    mcp.run(transport=args.transport)
+
+    if args.transport == "sse" and MCP_MOUNT_PATH and MCP_MOUNT_PATH != "/":
+        # Mount the SSE app at MCP_MOUNT_PATH so the endpoint event includes the
+        # full path prefix (e.g. /fao-56/messages/), enabling reverse-proxy setups.
+        import uvicorn
+        from starlette.applications import Starlette
+        from starlette.routing import Mount
+
+        sse_app = mcp.sse_app(mount_path=MCP_MOUNT_PATH)
+        app = Starlette(routes=[Mount(MCP_MOUNT_PATH, app=sse_app)])
+        uvicorn.run(app, host=MCP_HOST, port=MCP_PORT)
+    else:
+        mcp.run(transport=args.transport)
