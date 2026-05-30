@@ -31,7 +31,6 @@ DB_PATH = os.getenv("FAO56_DB", str(Path(__file__).parent / "fao56.db"))
 TOP_K = 5
 MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
 MCP_PORT = int(os.getenv("MCP_PORT", "8000"))
-MCP_MOUNT_PATH = os.getenv("MCP_MOUNT_PATH", "/")
 
 # ── Load resources once at startup ───────────────────────────────────────────
 
@@ -174,14 +173,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.transport == "sse" and MCP_MOUNT_PATH and MCP_MOUNT_PATH != "/":
-        # Run the SSE app directly with mount_path set so the endpoint event
-        # returns the full public prefix (e.g. /fao-56/messages/). The reverse
-        # proxy (Apache) strips the prefix before forwarding to the container,
-        # so the container routes remain at /sse and /messages/.
-        import uvicorn
-
-        app = mcp.sse_app(mount_path=MCP_MOUNT_PATH)
-        uvicorn.run(app, host=MCP_HOST, port=MCP_PORT)
-    else:
-        mcp.run(transport=args.transport)
+    # Transporte SSE servido na raiz (/sse + /messages/); mcp.run usa o host/port
+    # definidos no FastMCP (MCP_HOST/MCP_PORT). O proxy reverso (Apache) repassa
+    # mcp.lepoti.tech/ -> 127.0.0.1:8003/ sem reescrever caminho, então o endpoint
+    # anunciado (/messages/) bate com a rota real.
+    # NÃO reintroduzir prefixo de mount aqui: mcp.sse_app(mount_path="/x") anuncia
+    # /x/messages/ mas mantém a rota servida em /messages/, exigindo que o proxy
+    # remova o prefixo — desencontro que derruba o handshake (POST -> 404).
+    mcp.run(transport=args.transport)
