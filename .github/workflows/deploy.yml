@@ -3,20 +3,36 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Copia os arquivos da aplicação para o servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ssh.lepoti.tech
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "server.py,Dockerfile,docker-compose.yml,requirements.txt,index.py,fao56.db"
+          target: /opt/apps/fao56-mcp
+
+      - name: Rebuild e sobe o container
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ssh.lepoti.tech
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 15m
           script: |
-            set -e
-            cd /srv/fao56-mcp
-            git pull https://github.com/lepoti-tech/fao56-mcp.git main
-            docker compose up --build -d
-            echo "Deploy concluído: $(date)"
+            set -euo pipefail
+            cd /opt/apps/fao56-mcp
+            # docker-compose.yml (base, vindo do repo) + docker-compose.override.yml
+            # (TZ Brasília, mantido só no servidor) são mesclados automaticamente.
+            docker compose up -d --build
+            docker image prune -f
+            echo "Deploy concluído em $(date)"
