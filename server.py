@@ -31,6 +31,7 @@ DB_PATH = os.getenv("FAO56_DB", str(Path(__file__).parent / "fao56.db"))
 TOP_K = 5
 MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
 MCP_PORT = int(os.getenv("MCP_PORT", "8000"))
+MCP_MOUNT_PATH = os.getenv("MCP_MOUNT_PATH", "/fao-56")
 
 # ── Load resources once at startup ───────────────────────────────────────────
 
@@ -173,11 +174,21 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Transporte SSE servido na raiz (/sse + /messages/); mcp.run usa o host/port
-    # definidos no FastMCP (MCP_HOST/MCP_PORT). O proxy reverso (Apache) repassa
-    # mcp.lepoti.tech/ -> 127.0.0.1:8003/ sem reescrever caminho, então o endpoint
-    # anunciado (/messages/) bate com a rota real.
-    # NÃO reintroduzir prefixo de mount aqui: mcp.sse_app(mount_path="/x") anuncia
-    # /x/messages/ mas mantém a rota servida em /messages/, exigindo que o proxy
-    # remova o prefixo — desencontro que derruba o handshake (POST -> 404).
-    mcp.run(transport=args.transport)
+    if args.transport == "sse":
+        # SSE servido sob MCP_MOUNT_PATH: /fao-56/sse + /fao-56/messages/.
+        # O Mount do Starlette repassa root_path="/fao-56" ao app interno, e o
+        # SDK (mcp>=1.8) anuncia root_path + /messages/ no evento endpoint —
+        # anúncio e rota real ficam consistentes sem reescrita no proxy
+        # (Apache repassa mcp.lepoti.tech/ -> 127.0.0.1:8003/ preservando o
+        # caminho completo).
+        # NÃO passar mount_path para mcp.sse_app(): isso prefixa só o anúncio
+        # (não as rotas) e, combinado com o Mount, duplica o prefixo no anúncio
+        # (/fao-56/fao-56/messages/) — desencontro que derruba o handshake.
+        import uvicorn
+        from starlette.applications import Starlette
+        from starlette.routing import Mount
+
+        app = Starlette(routes=[Mount(MCP_MOUNT_PATH, app=mcp.sse_app())])
+        uvicorn.run(app, host=MCP_HOST, port=MCP_PORT)
+    else:
+        mcp.run(transport=args.transport)
